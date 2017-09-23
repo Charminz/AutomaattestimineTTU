@@ -1,2 +1,2 @@
 # AutomaattestimineTTU
-Repo for TUT's Automated testing course
+Repo for TUT's Automated Testing course
