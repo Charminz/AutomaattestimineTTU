@@ -10,15 +10,15 @@ public class WeatherAPITests {
 
     @Before
     public void setUp() throws Exception {
-        this.weatherAPI = new WeatherAPI();
-        weatherAPI.setNext3DaysMinTemp("Tallinn");
-        weatherAPI.setNext3DaysMaxTemp("Tallinn");
+        this.weatherAPI = new WeatherAPI("Tallinn");
+        weatherAPI.setNext3DaysMinTemp();
+        weatherAPI.setNext3DaysMaxTemp();
     }
 
     @Test
     public void testIfCurrentTempIsDouble() {
         try {
-            assertTrue(weatherAPI.getCurrentTemperatureByCity("Tallinn") instanceof Double);
+            assertTrue(weatherAPI.getCurrentTemperatureByCity() instanceof Double);
         } catch (Exception e) {
             fail();
         }
@@ -56,12 +56,12 @@ public class WeatherAPITests {
 
     @Test
     public void testGeoLocationLength() throws Exception {
-        assertTrue(weatherAPI.getGeoCoordinates("Tallinn").length() == 5);
+        assertTrue(weatherAPI.getGeoCoordinates().length() == 5);
     }
 
     @Test
     public void testXCoordinatesAreInteger() throws Exception {
-        String coords = weatherAPI.getGeoCoordinates("Tallinn");
+        String coords = weatherAPI.getGeoCoordinates();
         int index = coords.indexOf(':');
         try {
             assertTrue(Integer.valueOf(coords.substring(0, index)) instanceof Integer);
@@ -72,7 +72,7 @@ public class WeatherAPITests {
 
     @Test
     public void testYCoordinatesAreInteger() throws Exception {
-        String coords = weatherAPI.getGeoCoordinates("Tallinn");
+        String coords = weatherAPI.getGeoCoordinates();
         int index = coords.indexOf(':');
         try {
             assertTrue(Integer.valueOf(coords.substring(index + 1)) instanceof Integer);
@@ -83,21 +83,23 @@ public class WeatherAPITests {
 
     @Test
     public void testIfCurrentWeatherDataNotNull() throws Exception {
-        assertNotNull(weatherAPI.getCurrentWeatherData("Tallinn"));
+        assertNotNull(weatherAPI.getCurrentWeatherData());
     }
 
     @Test
     public void testIfWeatherForecastDataNotNull() throws Exception {
-        assertNotNull(weatherAPI.getWeatherForecastData("Tallinn"));
+        assertNotNull(weatherAPI.getWeatherForecastData());
     }
 
     @Test
     public void testIfCurrentWeatherDataNotEmpty() throws Exception {
-        assertFalse(weatherAPI.getCurrentWeatherData("Tallinn").equals(""));
+        assertFalse(weatherAPI.getCurrentWeatherData().equals(""));
     }
 
     @Test
     public void testIfWeatherForecastDataNotEmpty() throws Exception {
-        assertFalse(weatherAPI.getWeatherForecastData("Tallinn").equals(""));
+        assertFalse(weatherAPI.getWeatherForecastData().equals(""));
     }
+
+
 }
