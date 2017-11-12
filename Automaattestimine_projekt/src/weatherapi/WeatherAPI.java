@@ -3,7 +3,6 @@ package weatherapi;
 import org.json.JSONObject;
 
 import java.io.*;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.LocalDate;
@@ -61,11 +60,6 @@ public class WeatherAPI {
         if (city != null && !city.equals("")) this.city = city;
     }
 
-    public String getCurrentWeatherData() throws Exception {
-        URL currentWeatherUrl = new URL("http://api.openweathermap.org/data/2.5/weather?&APPID=" + apiKey + "&q=" + this.city + "&units=metric");
-        return getJson(currentWeatherUrl);
-    }
-
     public double getCurrentWeatherDataFromConsoleInput() throws Exception{
         System.out.println("Enter city name: ");
         Scanner in = new Scanner(System.in);
@@ -89,27 +83,15 @@ public class WeatherAPI {
         return getNext3DaysMinimumTemperaturesAsString();
     }
 
-    public String getWeatherForecastData() throws Exception {
-        URL currentWeatherUrl = new URL("http://api.openweathermap.org/data/2.5/forecast?&APPID=" + apiKey + "&q=" + this.city + "&units=metric");
-        return getJson(currentWeatherUrl);
-    }
-
-    public String getJson(URL url) throws IOException {
-        BufferedReader reader = new BufferedReader(new InputStreamReader(url.openStream()));
-        String data = reader.readLine();
-
-        return data;
-    }
-
     public Double getCurrentTemperatureByCity() throws Exception {
-        JSONObject json = new JSONObject(getCurrentWeatherData());
+        JSONObject json = new JSONObject(WeatherAPIJsonDataReceiver.getCurrentWeatherData(this.apiKey, this.city));
         double temperature = json.getJSONObject("main").getDouble("temp");
         writeDataToFile("Current temperature in " + this.city + ": " + String.valueOf(temperature) + "C");
         return temperature;
     }
 
     public String getGeoCoordinates() throws Exception {
-        JSONObject json = new JSONObject(getCurrentWeatherData());
+        JSONObject json = new JSONObject(WeatherAPIJsonDataReceiver.getCurrentWeatherData(this.apiKey, this.city));
 
         String latitude = String.valueOf(json.getJSONObject("coord").getInt("lat"));
         String longitude = String.valueOf(json.getJSONObject("coord").getInt("lon"));
@@ -118,7 +100,7 @@ public class WeatherAPI {
     }
 
     public void setNext3DaysMinTemp() throws Exception {
-        JSONObject json = new JSONObject(getWeatherForecastData());
+        JSONObject json = new JSONObject(WeatherAPIJsonDataReceiver.getWeatherForecastData(this.apiKey, this.city));
         HashMap<String, Double> minTemps = new HashMap<>();
 
         for (int count = 0; count < json.getJSONArray("list").length(); count++) {
@@ -135,7 +117,7 @@ public class WeatherAPI {
     }
 
     public void setNext3DaysMaxTemp() throws Exception {
-        JSONObject json = new JSONObject(getWeatherForecastData());
+        JSONObject json = new JSONObject(WeatherAPIJsonDataReceiver.getWeatherForecastData(this.apiKey, this.city));
         HashMap<String, Double> maxTemps = new HashMap<>();
 
         for (int count = 0; count < json.getJSONArray("list").length(); count++) {
@@ -148,7 +130,6 @@ public class WeatherAPI {
                 maxTemps.put(date, maxTemp);
             }
         }
-
         this.maxTemperatures = maxTemps;
     }
 
