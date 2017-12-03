@@ -1,1 +1,4 @@
-Coordinates: 51:0
+Next 3-day weather forecast (minimum temperature): 
+2017-12-02: 0.61
+2017-12-03: 1.75
+2017-12-04: 0.49

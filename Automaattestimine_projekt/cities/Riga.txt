@@ -1,0 +1,13 @@
+City: Riga
+Coordinates: 56:24
+Next 3-day weather forecast (maximum temperature): 
+2017-11-30: 1.83
+2017-12-01: 2.61
+2017-11-29: 2.61
+
+Next 3-day weather forecast (minimum temperature): 
+2017-11-30: 0.55
+2017-12-01: 1.27
+2017-11-29: 0.6
+
+Current temperature: 0.0

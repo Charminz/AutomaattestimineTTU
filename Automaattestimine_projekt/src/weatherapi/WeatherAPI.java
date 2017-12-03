@@ -1,155 +1,155 @@
 package weatherapi;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.*;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.IOException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.TreeMap;
 
 public class WeatherAPI {
+    private DataWriter writer;
+    private DataReader reader;
+    private WeatherAPIJsonDataReceiver jsonReceiver;
     private String apiKey = "d0fcb2e76efa4e13887c5910130b1ead";
-    private HashMap<String, Double> minTemperatures = new HashMap<>();
-    private HashMap<String, Double> maxTemperatures = new HashMap<>();
+    private Map<String, Double> minTemperatures = new TreeMap<>();
+    private Map<String, Double> maxTemperatures = new TreeMap<>();
     private String city;
 
-    public static void main(String[] args) throws Exception{
-        WeatherAPI api = new WeatherAPI();
+    public static void main(String[] args) throws Exception {
+        WeatherAPI api = new WeatherAPI(new DataWriter(), new DataReader(), new WeatherAPIJsonDataReceiver());
 
         try {
-            api.setNext3DaysMinTemp();
-            System.out.println(api.getNext3DaysMinimumTemperaturesAsString());
-            api.setNext3DaysMaxTemp();
-            System.out.println(api.getNext3DaysMaximumTemperaturesAsString());
-            System.out.println("Current temperature in " + api.city + ": " + api.getCurrentTemperatureByCity() + "C");
-            System.out.println("Coordinates: " + api.getGeoCoordinates());
+            api.getInfoAndWriteInCityFile();
         } catch (Exception e) {
             e.printStackTrace();
         }
-
-        //System.out.println(api.getCWeatherForecastMinTempFromConsoleInput());
     }
 
-    public WeatherAPI() {
+    public WeatherAPI(DataWriter writer, DataReader reader, WeatherAPIJsonDataReceiver jsonReceiver) {
+        this.writer = writer;
+        this.reader = reader;
+        this.jsonReceiver = jsonReceiver;
         setCityFromInputFile();
     }
 
-    public WeatherAPI(String city) {
+    public WeatherAPI(String city, DataWriter writer, DataReader reader, WeatherAPIJsonDataReceiver jsonReceiver) {
         this.city = city;
+        this.writer = writer;
+        this.reader = reader;
+        this.jsonReceiver = jsonReceiver;
     }
 
+
     public void setCityFromInputFile() {
-        String city = "Tallinn";
-        try (BufferedReader reader = Files.newBufferedReader(Paths.get("input.txt"))) {
-            while (true) {
-                String line = reader.readLine();
-                if (line == null) break;
-                city = line;
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        this.city = city;
+        this.city = reader.getCityFromFile();
     }
 
     public void setCity(String city) {
         if (city != null && !city.equals("")) this.city = city;
     }
 
-    public double getCurrentWeatherDataFromConsoleInput() throws Exception{
+    public void setCityFromConsole() {
         System.out.println("Enter city name: ");
         Scanner in = new Scanner(System.in);
         this.city = in.nextLine();
-        return getCurrentTemperatureByCity();
+        in.close();
     }
 
-    public String getWeatherForecastMaxTempFromConsoleInput() throws Exception{
-        System.out.println("Enter city name: ");
-        Scanner in = new Scanner(System.in);
-        this.city = in.nextLine();
-
-        return getNext3DaysMaximumTemperaturesAsString();
+    public String getCity() {
+        return city;
     }
 
-    public String getCWeatherForecastMinTempFromConsoleInput() throws Exception{
-        System.out.println("Enter city name: ");
-        Scanner in = new Scanner(System.in);
-        this.city = in.nextLine();
-
-        return getNext3DaysMinimumTemperaturesAsString();
+    public String getApiKey() {
+        return apiKey;
     }
 
-    public Double getCurrentTemperatureByCity() throws Exception {
-        JSONObject json = new JSONObject(WeatherAPIJsonDataReceiver.getCurrentWeatherData(this.apiKey, this.city));
-        double temperature = json.getJSONObject("main").getDouble("temp");
-        writeDataToFile("Current temperature in " + this.city + ": " + String.valueOf(temperature) + "C");
+    public Double getCurrentTemperatureByCity() {
+        JSONObject json = null;
+        double temperature = -200;
+        try {
+            json = new JSONObject(this.jsonReceiver.getCurrentWeatherData(this.apiKey, this.city));
+            temperature = json.getJSONObject("main").getDouble("temp");
+        } catch (JSONException | IOException e) {
+            e.printStackTrace();
+        }
+
+        writer.writeDataToResultFile("Current temperature in " + this.city + ": " + String.valueOf(temperature) + "C");
         return temperature;
     }
 
-    public String getGeoCoordinates() throws Exception {
-        JSONObject json = new JSONObject(WeatherAPIJsonDataReceiver.getCurrentWeatherData(this.apiKey, this.city));
-
+    public String getGeoCoordinates() throws IOException, JSONException {
+        JSONObject json = new JSONObject(jsonReceiver.getCurrentWeatherData(this.apiKey, this.city));
         String latitude = String.valueOf(json.getJSONObject("coord").getInt("lat"));
         String longitude = String.valueOf(json.getJSONObject("coord").getInt("lon"));
-        writeDataToFile("Coordinates: " + latitude + ":" + longitude);
+        writer.writeDataToResultFile("Coordinates: " + latitude + ":" + longitude);
         return latitude + ":" + longitude;
     }
 
-    public void setNext3DaysMinTemp() throws Exception {
-        JSONObject json = new JSONObject(WeatherAPIJsonDataReceiver.getWeatherForecastData(this.apiKey, this.city));
-        HashMap<String, Double> minTemps = new HashMap<>();
+    public void setNext3DaysMinTemp() {
+        try {
+            JSONObject json = new JSONObject(jsonReceiver.getWeatherForecastData(this.apiKey, this.city));
+            Map<String, Double> minTemps = new TreeMap<>();
 
-        for (int count = 0; count < json.getJSONArray("list").length(); count++) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            String date = LocalDate.parse(json.getJSONArray("list").getJSONObject(count).getString("dt_txt"), formatter).toString();
-            double minTemp = json.getJSONArray("list").getJSONObject(count).getJSONObject("main").getDouble("temp_min");
+            for (int count = 0; count < json.getJSONArray("list").length(); count++) {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                String date = LocalDate.parse(json.getJSONArray("list").getJSONObject(count).getString("dt_txt"), formatter).toString();
+                double minTemp = json.getJSONArray("list").getJSONObject(count).getJSONObject("main").getDouble("temp_min");
 
-            if (LocalDate.now().isBefore(LocalDate.parse(date)) && LocalDate.now().plusDays(4).isAfter(LocalDate.parse(date))
-                    && (!minTemps.containsKey(date) || (minTemps.containsKey(date) && minTemps.get(date) > minTemp))) {
-                minTemps.put(date, minTemp);
+                if (LocalDate.now().isBefore(LocalDate.parse(date)) && LocalDate.now().plusDays(4).isAfter(LocalDate.parse(date))
+                        && (!minTemps.containsKey(date) || (minTemps.containsKey(date) && minTemps.get(date) > minTemp))) {
+                    minTemps.put(date, minTemp);
+                }
             }
+            this.minTemperatures = minTemps;
+        } catch (JSONException | IOException e) {
+            e.printStackTrace();
         }
-        this.minTemperatures = minTemps;
     }
 
-    public void setNext3DaysMaxTemp() throws Exception {
-        JSONObject json = new JSONObject(WeatherAPIJsonDataReceiver.getWeatherForecastData(this.apiKey, this.city));
-        HashMap<String, Double> maxTemps = new HashMap<>();
+    public void setNext3DaysMaxTemp() {
+        try {
+            JSONObject json = new JSONObject(jsonReceiver.getWeatherForecastData(this.apiKey, this.city));
+            Map<String, Double> maxTemps = new TreeMap<>();
 
-        for (int count = 0; count < json.getJSONArray("list").length(); count++) {
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            String date = LocalDate.parse(json.getJSONArray("list").getJSONObject(count).getString("dt_txt"), formatter).toString();
-            double maxTemp = json.getJSONArray("list").getJSONObject(count).getJSONObject("main").getDouble("temp_max");
+            for (int count = 0; count < json.getJSONArray("list").length(); count++) {
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                String date = LocalDate.parse(json.getJSONArray("list").getJSONObject(count).getString("dt_txt"), formatter).toString();
+                double maxTemp = json.getJSONArray("list").getJSONObject(count).getJSONObject("main").getDouble("temp_max");
 
-            if (LocalDate.now().isBefore(LocalDate.parse(date)) && LocalDate.now().plusDays(4).isAfter(LocalDate.parse(date))
-                    && (!maxTemps.containsKey(date) || (maxTemps.containsKey(date) && maxTemps.get(date) < maxTemp))) {
-                maxTemps.put(date, maxTemp);
+                if (LocalDate.now().isBefore(LocalDate.parse(date)) && LocalDate.now().plusDays(4).isAfter(LocalDate.parse(date))
+                        && (!maxTemps.containsKey(date) || (maxTemps.containsKey(date) && maxTemps.get(date) < maxTemp))) {
+                    maxTemps.put(date, maxTemp);
+                }
             }
+            this.maxTemperatures = maxTemps;
+        } catch (JSONException | IOException e) {
+            e.printStackTrace();
         }
-        this.maxTemperatures = maxTemps;
     }
 
-    public String getNext3DaysMinimumTemperaturesAsString() throws Exception{
+    public String getNext3DaysMinimumTemperaturesAsString() {
         this.setNext3DaysMinTemp();
-        String result = "Next 3-day weather forecast (minimum temperature): \n";
+        StringBuilder resultBuilder = new StringBuilder("Next 3-day weather forecast (minimum temperature): \n");
         for (String key : this.minTemperatures.keySet()) {
-            result += key + ": " + this.minTemperatures.get(key) + "\n";
+            resultBuilder.append(key).append(": ").append(this.minTemperatures.get(key)).append("\n");
         }
-        this.writeDataToFile(result);
+        String result = resultBuilder.toString();
+        writer.writeDataToResultFile(result);
         return result;
     }
 
-    public String getNext3DaysMaximumTemperaturesAsString() throws Exception{
+    public String getNext3DaysMaximumTemperaturesAsString() {
         this.setNext3DaysMaxTemp();
-        String result = "Next 3-day weather forecast (maximum temperature): \n";
+        StringBuilder resultBuilder = new StringBuilder("Next 3-day weather forecast (maximum temperature): \n");
         for (String key : this.maxTemperatures.keySet()) {
-            result += key + ": " + this.maxTemperatures.get(key) + "\n";
+            resultBuilder.append(key).append(": ").append(this.maxTemperatures.get(key)).append("\n");
         }
-        this.writeDataToFile(result);
+        String result = resultBuilder.toString();
+        writer.writeDataToResultFile(result);
         return result;
     }
 
@@ -161,13 +161,12 @@ public class WeatherAPI {
         return this.maxTemperatures;
     }
 
-    public void writeDataToFile(String data) {
-        try {
-            BufferedWriter writer = new BufferedWriter(new FileWriter("output.txt"));
-            writer.write(data);
-            writer.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public void getInfoAndWriteInCityFile() throws IOException, JSONException {
+        String weatherInfo = "City: " + this.city + "\n"
+                + "Coordinates: " + this.getGeoCoordinates() + "\n"
+                + this.getNext3DaysMaximumTemperaturesAsString() + "\n"
+                + this.getNext3DaysMinimumTemperaturesAsString() + "\n"
+                + "Current temperature: " + this.getCurrentTemperatureByCity();
+        writer.writeDataToCityFile(weatherInfo, this.city);
     }
 }
