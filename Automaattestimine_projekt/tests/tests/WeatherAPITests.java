@@ -28,7 +28,7 @@ public class WeatherAPITests {
 //        weatherAPI.setNext3DaysMaxTemp();
     }
 
-    String getFakeJsonCurrentWeather() {
+    public String getFakeJsonCurrentWeather() {
         String result = "";
         try (BufferedReader reader = Files.newBufferedReader(Paths.get("FakeJsonFile.txt"))) {
             result = reader.readLine();
@@ -40,7 +40,7 @@ public class WeatherAPITests {
         return result;
     }
 
-    String getFakeJsonWeatherForecast() {
+    public String getFakeJsonWeatherForecast() {
         String result = "";
         try (BufferedReader reader = Files.newBufferedReader(Paths.get("FakeJsonWeatherForecast.txt"))) {
             result = reader.readLine();
@@ -49,6 +49,7 @@ public class WeatherAPITests {
         } catch (IOException e) {
             e.printStackTrace();
         }
+
         return result;
     }
 
@@ -249,6 +250,7 @@ public class WeatherAPITests {
         WeatherAPI api = new WeatherAPI("Tallinn", new DataWriter(), new DataReader(), json);
 
         when(json.getWeatherForecastData(api.getApiKey(), "Tallinn")).thenReturn(getFakeJsonWeatherForecast());
+        api.setCurrentDate("2017-12-01 15:00:00");
         api.setNext3DaysMinTemp();
         TreeMap<String, Double> map = new TreeMap<>();
         map.put("2017-12-02", 0.61);
@@ -264,7 +266,9 @@ public class WeatherAPITests {
         WeatherAPI api = new WeatherAPI("Tallinn", new DataWriter(), new DataReader(), json);
 
         when(json.getWeatherForecastData(api.getApiKey(), "Tallinn")).thenReturn(getFakeJsonWeatherForecast());
+        api.setCurrentDate("2017-12-01 15:00:00");
         api.setNext3DaysMaxTemp();
+
         TreeMap<String, Double> map = new TreeMap<>();
         map.put("2017-12-02", 2.53);
         map.put("2017-12-03", 4.44);
@@ -279,7 +283,7 @@ public class WeatherAPITests {
         WeatherAPI api = new WeatherAPI("Tallinn", new DataWriter(), new DataReader(), json);
 
         when(json.getWeatherForecastData(api.getApiKey(), "Tallinn")).thenReturn(getFakeJsonWeatherForecast());
-
+        api.setCurrentDate("2017-12-01 15:00:00");
         assertEquals("Next 3-day weather forecast (minimum temperature): \n" +
                 "2017-12-02: 0.61\n" +
                 "2017-12-03: 1.75\n" +
@@ -292,6 +296,7 @@ public class WeatherAPITests {
         WeatherAPI api = new WeatherAPI("Tallinn", new DataWriter(), new DataReader(), json);
 
         when(json.getWeatherForecastData(api.getApiKey(), "Tallinn")).thenReturn(getFakeJsonWeatherForecast());
+        api.setCurrentDate("2017-12-01 15:00:00");
 
         assertEquals("Next 3-day weather forecast (maximum temperature): \n" +
                 "2017-12-02: 2.53\n" +
@@ -306,6 +311,7 @@ public class WeatherAPITests {
         WeatherAPI api = new WeatherAPI("Tallinn", writer, new DataReader(), json);
 
         when(json.getWeatherForecastData(api.getApiKey(), "Tallinn")).thenReturn(getFakeJsonWeatherForecast());
+        api.setCurrentDate("2017-12-01 15:00:00");
         api.getNext3DaysMinimumTemperaturesAsString();
         verify(writer).writeDataToResultFile("Next 3-day weather forecast (minimum temperature): \n" +
                 "2017-12-02: 0.61\n" +
@@ -320,6 +326,7 @@ public class WeatherAPITests {
         WeatherAPI api = new WeatherAPI("Tallinn", writer, new DataReader(), json);
 
         when(json.getWeatherForecastData(api.getApiKey(), "Tallinn")).thenReturn(getFakeJsonWeatherForecast());
+        api.setCurrentDate("2017-12-01 15:00:00");
         api.getNext3DaysMaximumTemperaturesAsString();
         verify(writer).writeDataToResultFile("Next 3-day weather forecast (maximum temperature): \n" +
                 "2017-12-02: 2.53\n" +
@@ -335,6 +342,7 @@ public class WeatherAPITests {
 
         when(json.getCurrentWeatherData(api.getApiKey(), "Tallinn")).thenReturn(getFakeJsonCurrentWeather());
         when(json.getWeatherForecastData(api.getApiKey(), "Tallinn")).thenReturn(getFakeJsonWeatherForecast());
+        api.setCurrentDate("2017-12-01 15:00:00");
         api.getInfoAndWriteInCityFile();
         verify(writer).writeDataToCityFile("City: Tallinn\n" +
                 "Coordinates: 59:24\n" +

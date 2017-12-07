@@ -18,6 +18,7 @@ public class WeatherAPI {
     private Map<String, Double> minTemperatures = new TreeMap<>();
     private Map<String, Double> maxTemperatures = new TreeMap<>();
     private String city;
+    private LocalDate currentDate = LocalDate.now();
 
     public static void main(String[] args) throws Exception {
         WeatherAPI api = new WeatherAPI(new DataWriter(), new DataReader(), new WeatherAPIJsonDataReceiver());
@@ -82,7 +83,7 @@ public class WeatherAPI {
     }
 
     public String getGeoCoordinates() throws IOException, JSONException {
-        JSONObject json = new JSONObject(jsonReceiver.getCurrentWeatherData(this.apiKey, this.city));
+        JSONObject json = new JSONObject(this.jsonReceiver.getCurrentWeatherData(this.apiKey, this.city));
         String latitude = String.valueOf(json.getJSONObject("coord").getInt("lat"));
         String longitude = String.valueOf(json.getJSONObject("coord").getInt("lon"));
         writer.writeDataToResultFile("Coordinates: " + latitude + ":" + longitude);
@@ -91,7 +92,7 @@ public class WeatherAPI {
 
     public void setNext3DaysMinTemp() {
         try {
-            JSONObject json = new JSONObject(jsonReceiver.getWeatherForecastData(this.apiKey, this.city));
+            JSONObject json = new JSONObject(this.jsonReceiver.getWeatherForecastData(this.apiKey, this.city));
             Map<String, Double> minTemps = new TreeMap<>();
 
             for (int count = 0; count < json.getJSONArray("list").length(); count++) {
@@ -99,7 +100,7 @@ public class WeatherAPI {
                 String date = LocalDate.parse(json.getJSONArray("list").getJSONObject(count).getString("dt_txt"), formatter).toString();
                 double minTemp = json.getJSONArray("list").getJSONObject(count).getJSONObject("main").getDouble("temp_min");
 
-                if (LocalDate.now().isBefore(LocalDate.parse(date)) && LocalDate.now().plusDays(4).isAfter(LocalDate.parse(date))
+                if (this.currentDate.isBefore(LocalDate.parse(date)) && this.currentDate.plusDays(4).isAfter(LocalDate.parse(date))
                         && (!minTemps.containsKey(date) || (minTemps.containsKey(date) && minTemps.get(date) > minTemp))) {
                     minTemps.put(date, minTemp);
                 }
@@ -112,15 +113,14 @@ public class WeatherAPI {
 
     public void setNext3DaysMaxTemp() {
         try {
-            JSONObject json = new JSONObject(jsonReceiver.getWeatherForecastData(this.apiKey, this.city));
+            JSONObject json = new JSONObject(this.jsonReceiver.getWeatherForecastData(this.apiKey, this.city));
             Map<String, Double> maxTemps = new TreeMap<>();
 
             for (int count = 0; count < json.getJSONArray("list").length(); count++) {
                 DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
                 String date = LocalDate.parse(json.getJSONArray("list").getJSONObject(count).getString("dt_txt"), formatter).toString();
                 double maxTemp = json.getJSONArray("list").getJSONObject(count).getJSONObject("main").getDouble("temp_max");
-
-                if (LocalDate.now().isBefore(LocalDate.parse(date)) && LocalDate.now().plusDays(4).isAfter(LocalDate.parse(date))
+                if (this.currentDate.isBefore(LocalDate.parse(date)) && this.currentDate.plusDays(4).isAfter(LocalDate.parse(date))
                         && (!maxTemps.containsKey(date) || (maxTemps.containsKey(date) && maxTemps.get(date) < maxTemp))) {
                     maxTemps.put(date, maxTemp);
                 }
@@ -139,6 +139,7 @@ public class WeatherAPI {
         }
         String result = resultBuilder.toString();
         writer.writeDataToResultFile(result);
+        System.out.println(result);
         return result;
     }
 
@@ -168,5 +169,10 @@ public class WeatherAPI {
                 + this.getNext3DaysMinimumTemperaturesAsString() + "\n"
                 + "Current temperature: " + this.getCurrentTemperatureByCity();
         writer.writeDataToCityFile(weatherInfo, this.city);
+    }
+
+    public void setCurrentDate(String date) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        this.currentDate = LocalDate.parse(date, formatter);
     }
 }
